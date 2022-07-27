@@ -18,6 +18,8 @@ from jwst.datamodels import dqflags
 from jwst.lib import reffile_utils
 from jwst.lib import pipe_utils
 
+from . import update_saturation
+
 import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -88,53 +90,7 @@ default='none') # max number of processes to create
         with datamodels.RampModel(input) as input_model:
 
             if self.s1_meta.update_sat_flags:
-                self.s1_log.writelog('  Applying a more severe saturation flagging')
-                # Compute the median of the groupdq map
-                median_sat = np.median(input_model.groupdq, axis=0).astype(int)
-                # Store the saturation flag value
-                sat_flag = dqflags.pixel['SATURATED']
-                median_sat_mask = (median_sat == sat_flag)
-
-                # Expand saturated pixels to full columns
-                new_sat_mask = 1 * median_sat_mask
-                ngrp = new_sat_mask.shape[0]
-                ncols = new_sat_mask.shape[1]
-                nrows = new_sat_mask.shape[2]
-                for i in range(ngrp):
-                    is_col_sat = np.sum(median_sat_mask[i, :, :], axis=0).astype(bool)
-                    new_sat_mask[i, :, :] = np.broadcast_to(is_col_sat, (ncols, nrows))
-
-                # Expand saturation flags to one group before
-                for i in range(ngrp-1):
-                    new_sat_mask[i, :, :] += new_sat_mask[i+1, :, :] 
-
-                # Make sure that we did not put saturation in Group 1
-                # If so, remove it (o.w. no info at all for ramp_fitting)
-                if np.count_nonzero(new_sat_mask[0]) > 0:
-                    self.s1_log.writelog('  WARNING')
-                    self.s1_log.writelog('  Some saturated flags found in the first group.')
-                    self.s1_log.writelog('  Removing the flags so the first group is fully used')
-                    new_sat_mask[0,:,:] *= False
-
-                # If flags in the second group, just raise a warning
-                if np.count_nonzero(new_sat_mask[1]) > 0:
-                    self.s1_log.writelog('  WARNING')
-                    self.s1_log.writelog('  Saturation flags found in the 2nd group ')
-                    self.s1_log.writelog('  This means some columns only have nGroup=1... ')
-                    self.s1_log.writelog('  Use caution for this part of the detector.')
-                
-                # Ensure we still have a boolean mask
-                new_sat_mask = new_sat_mask.astype(bool)
-
-                # Now broadcast that mask back to the number of ints
-                new_sat_mask = np.broadcast_to(new_sat_mask, input_model.groupdq.shape)
-
-                # Saturation flagging condition
-                # Where our saturation mask is True and dq is not already flagged
-                condition = ((new_sat_mask == True) & (input_model.groupdq == 0))
-
-                # Now update the groupdq map
-                input_model.groupdq[condition] = sat_flag
+                input_model = update_saturation.update_sat(input_model, self.s1_log, self.s1_meta)
 
             if self.s1_meta.grouplevel_bg:
                 from ..S3_data_reduction import background as bkg
