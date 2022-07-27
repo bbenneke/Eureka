@@ -1,7 +1,7 @@
 # !/usr/bin/python
 import os
 
-from .version import __version__
+#from .version import __version__
 
 from . import lib
 try:
