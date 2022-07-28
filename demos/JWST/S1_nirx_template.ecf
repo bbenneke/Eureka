@@ -25,6 +25,9 @@ skip_gain_scale     False
 #Pipeline stages parameters
 jump_rejection_threshold  4.0 #float, default is 4.0, CR sigma rejection threshold
 
+#Saturation
+update_sat_flags    False   #Wheter to update the saturation flags more aggressively
+
 #Background subtraction
 grouplevel_bg 		True
 ncpu				8

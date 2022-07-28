@@ -258,7 +258,7 @@ def reduce(eventlabel, ecf_path=None, s2_meta=None):
 
                 # Start masking pixels based on DQ flags
                 if meta.dqmask:
-                    dqmask = np.where(data['dq'] != 0)
+                    dqmask = np.where((data['dq'] != 0) & (data['dq'] != 2))
                     data['mask'].values[dqmask] = 0
 
                 # Check if arrays have NaNs
