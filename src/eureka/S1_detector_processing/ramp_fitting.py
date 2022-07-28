@@ -108,8 +108,11 @@ default='none') # max number of processes to create
                     xrdict = dict(flux=xrdata, mask=xrmask)
                     data = xrio.makeDataset(dictionary=xrdict)
                     data['flux'].attrs['flux_units']='n/a'
-
-                    data = bkg.BGsubtraction(data, self.s1_meta, self.s1_log, self.s1_meta.isplots)
+                    if ngrp==all_data.shape[1]-1:
+                        data = bkg.BGsubtraction(data, self.s1_meta, self.s1_log, self.s1_meta.isplots)
+                    else:
+                        # do not show plots except for the last group
+                        data = bkg.BGsubtraction(data, self.s1_meta, self.s1_log, 0)
                     all_data[:,ngrp,:,:] = data['flux'].values
                 input_model.data = all_data
             
