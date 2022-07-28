@@ -93,6 +93,7 @@ def medstddev(data, mask=None, medi=False, axis=0):
     - 2022-04-11  Taylor James Bell
         Efficiently using numpy axes
     """
+
     # mask invalid values:
     data = np.ma.masked_invalid(data)
     if mask is not None:
@@ -104,7 +105,7 @@ def medstddev(data, mask=None, medi=False, axis=0):
     median = np.ma.median(data, axis=axis)
     # residuals is data - median, masked values don't count:
     residuals = data - median
-    # calculate standar deviation:
+    # calculate standard deviation:
     with np.errstate(divide='ignore', invalid='ignore'):
         std = np.ma.sqrt(np.ma.sum(residuals**2.0) / (ngood - 1.0))
 
@@ -117,11 +118,12 @@ def medstddev(data, mask=None, medi=False, axis=0):
         median = median.reshape(-1)
 
     # critical case fixes:
+    
     if np.any(ngood == 0):
-        std[np.where(ngood == 0)[0]] = np.nan
-        median[np.where(ngood == 0)[0]] = np.nan
+        std[np.where(ngood == 0)] = np.nan
+        median[np.where(ngood == 0)] = np.nan
     if np.any(ngood == 1):
-        std[np.where(ngood == 1)[0]] = 0.
+        std[np.where(ngood == 1)] = 0.
 
     if len(std) == 1:
         std = std[0]
