@@ -84,6 +84,8 @@ def BGsubtraction(data, meta, log, isplots):
         if meta.verbose:
             iterfn = tqdm(iterfn)
         for n in iterfn:
+            if n>0:
+                isplots=isplots - 1 # produce less plots for subsequent integrations
             # Fit sky background with out-of-spectra data
             if meta.inst == 'niriss':
                 writeBG(inst.fit_bg(data, meta, n, isplots))
@@ -106,26 +108,63 @@ def BGsubtraction(data, meta, log, isplots):
         # (see nircam and below for example)
         if meta.inst == 'niriss':
             for n in range(meta.int_start, meta.n_int):
+                if n>0:
+                    isplots=isplots - 1 # produce less plots for subsequent integrations
                 args_list.append((data, meta, n, isplots))
             jobs = [pool.apply_async(func=inst.fit_bg, args=(*args,),
                                      callback=writeBG) for args in args_list]
         elif meta.inst == 'wfc3':
+
+         
             # The WFC3 background subtraction needs a few more inputs
             # and outputs
+            
+            # for n in range(meta.int_start, meta.n_int):
+            #     if n>0:
+            #         isplots=isplots - 1 # produce less plots for subsequent integrations   
+            #     args = (data.flux[n].values,
+            #           data.mask[n].values,
+            #           data.v0[n].values,
+            #           data.variance[n].values, 
+            #           data.guess[n].values,
+            #           n, meta, isplots)
+            # jobs = pool.apply_async(func=inst.fit_bg,
+            #                          args=(*args,),
+            #                          callback=writeBG_WFC3)
+            
+            # produce less plots for subsequent integrations
+            ns = np.arange(meta.int_start, meta.n_int)
+            isplots_all = np.ones_like(ns) * isplots
+            isplots_all[1:] = isplots_all[1:] - 1
+            
             jobs = [pool.apply_async(func=inst.fit_bg,
                                      args=(data.flux[n].values,
                                            data.mask[n].values,
                                            data.v0[n].values,
                                            data.variance[n].values, 
                                            data.guess[n].values,
-                                           n, meta, isplots,),
+                                           n, meta, isplots_all[n],),
                                      callback=writeBG_WFC3)
                     for n in range(meta.int_start, meta.n_int)]
         else:
+            
+            # produce less plots for subsequent integrations
+            ns = np.arange(meta.int_start, meta.n_int)
+            isplots_all = np.ones_like(ns) * isplots
+            isplots_all[1:] = isplots_all[1:] - 1
+            # for n in range(meta.int_start, meta.n_int):
+            #     if n>0:
+            #         isplots=isplots - 1                   
+            #     args = (data.flux[n].values,
+            #           data.mask[n].values,
+            #           n, meta, isplots)
+            # jobs = pool.apply_async(func=inst.fit_bg,
+            #                          args=(*args,),
+            #                          callback=writeBG)
             jobs = [pool.apply_async(func=inst.fit_bg,
                                      args=(data.flux[n].values,
                                            data.mask[n].values,
-                                           n, meta, isplots,),
+                                           n, meta, isplots_all[n],),
                                      callback=writeBG)
                     for n in range(meta.int_start, meta.n_int)]
         pool.close()
@@ -161,7 +200,7 @@ def fitbg(dataim, meta, mask, x1, x2, deg=1, threshold=5, isrotate=False,
         Default is 1.
     threshold : int; optional
         Sigma threshold for outlier rejection during background subtraction.
-        Defaullt is 5.
+        Default is 5.
     isrotate : bool; optional
         Default is False.
     isplots : int; optional
@@ -210,8 +249,21 @@ def fitbg(dataim, meta, mask, x1, x2, deg=1, threshold=5, isrotate=False,
         for j in range(ny):
             nobadpixels = False
             # Create x indices for background sections of frame
-            xvals = np.concatenate((range(x1[j]),
-                                    range(x2[j]+1, nx))).astype(int)
+            
+            arr_below = np.arange(x1[j])
+            arr_above = np.arange(x2[j]+1, nx)
+            try:
+                if meta.bg_y_width is not None:
+                    if meta.bg_y_width[0] is not None:
+                        arr_below = np.arange(x1[j]-meta.bg_y_width[0], x1[j])                    
+                    
+                    if meta.bg_y_width[1] is not None:
+                        arr_above = np.arange(x2[j]+1, x2[j]+1+meta.bg_y_width[1])
+            except:
+                print("There was an issue when looking for bg_y_width in the meta!")
+            xvals = np.concatenate((arr_below,
+                                    arr_above)).astype(int)
+            
             # If too few good pixels then average
             too_few_pix = (np.sum(mask[j, :x1[j]]) < deg
                            or np.sum(mask[j, x2[j]+1:nx]) < deg)
@@ -263,15 +315,17 @@ def fitbg(dataim, meta, mask, x1, x2, deg=1, threshold=5, isrotate=False,
             # background image
             if len(goodxvals) != 0:
                 bg[j] = np.polyval(coeffs, range(nx))
-                if isplots >= 6:
-                    plt.figure(3601)
-                    plt.clf()
-                    plt.title(str(j))
-                    plt.plot(goodxvals, dataslice, 'bo')
-                    plt.plot(range(nx), bg[j], 'g-')
-                    fname = 'figs'+os.sep+'Fig6_BG_'+str(j)+figure_filetype
-                    plt.savefig(meta.outputdir + fname, dpi=300)
-                    plt.pause(0.01)
+                if isplots >= 5:
+                    if (j%100==0.) or (isplots >=6):
+                        plt.figure(3601)
+                        plt.clf()
+                        plt.title(str(j))
+                        plt.plot(goodxvals, dataslice, 'bo')
+                        plt.plot(range(nx), bg[j], 'g-')
+                        fname = 'figs'+os.sep+'Fig6_BG_'+str(j)+figure_filetype
+                        plt.savefig(meta.outputdir + fname, dpi=300)
+                        if not meta.hide_plots:
+                            plt.pause(0.01)
 
     if isrotate == 1:
         bg = (bg.T)[::-1]
