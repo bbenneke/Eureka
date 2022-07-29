@@ -66,22 +66,22 @@ def lc_nodriftcorr(meta, wave_1d, optspec, optmask=None):
 
 
 
-def lc_SNR_inspection(meta, x, optspec, opterr):
+def lc_SNR_inspection(spec, meta):
     '''Inspection plot to to evaluate how close SNR of spectroscopic light curves is compared
     to expectation from opterr (Fig 3102)
 
     Parameters
     ----------
+    spec : Xarray Dataset
+        The Dataset object.
     meta : eureka.lib.readECF.MetaClass
         The metadata object.
-    optspec : ndarray
-        The optimally extracted spectrum.
-    opterr : ndarray
-        The estimated uncertainty of optimally extracted spectrum.
+     
     Returns
     -------
     None
     '''
+    x, optspec, opterr = spec.x, spec.optspec, spec.opterr
     
     def calc_high_freq_scatter(flux,flag=None):
         #Select the flux values to consider
@@ -482,7 +482,6 @@ def driftywidth(data, meta):
     if not meta.hide_plots:
         plt.pause(0.2)
 
-## CP I AM HERE
 def optimal_spectrum_and_std(spec, meta, maxnspec=10):
     '''Overplot all the extracted optimal spectra.
     Show the std as a function of wavelength. (Figs 3308) 
