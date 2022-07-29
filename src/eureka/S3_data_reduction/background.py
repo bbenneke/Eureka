@@ -252,15 +252,13 @@ def fitbg(dataim, meta, mask, x1, x2, deg=1, threshold=5, isrotate=False,
             
             arr_below = np.arange(x1[j])
             arr_above = np.arange(x2[j]+1, nx)
-            try:
+            if hasattr(meta, 'bg_y_width'):
                 if meta.bg_y_width is not None:
                     if meta.bg_y_width[0] is not None:
                         arr_below = np.arange(x1[j]-meta.bg_y_width[0], x1[j])                    
                     
                     if meta.bg_y_width[1] is not None:
                         arr_above = np.arange(x2[j]+1, x2[j]+1+meta.bg_y_width[1])
-            except:
-                print("There was an issue when looking for bg_y_width in the meta!")
             xvals = np.concatenate((arr_below,
                                     arr_above)).astype(int)
             
