@@ -454,6 +454,7 @@ def reduce(eventlabel, ecf_path=None, s2_meta=None):
                 # 2D light curve without drift correction
                 plots_s3.lc_nodriftcorr(meta, spec.wave_1d, spec.optspec,
                                         optmask=spec.optmask)
+                plots_s3.optimal_spectrum_and_std(spec, meta)
 
             # Save results
             if meta.save_output:

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from .source_pos import gauss
 from ..lib import util
 from ..lib.plots import figure_filetype
-
+import pdb
 
 def lc_nodriftcorr(meta, wave_1d, optspec, optmask=None):
     '''Plot a 2D light curve without drift correction. (Fig 3101)
@@ -423,3 +423,54 @@ def driftywidth(data, meta):
     plt.savefig(meta.outputdir+fname, bbox_inches='tight', dpi=300)
     if not meta.hide_plots:
         plt.pause(0.2)
+
+## CP I AM HERE
+def optimal_spectrum_and_std(spec, meta, maxnspec=10):
+    '''Overplot all the extracted optimal spectra.
+    Show the std as a function of wavelength. (Figs 3308) 
+
+    Parameters
+    ----------
+    spec : Xarray Dataset
+        The Dataset object.
+    meta : eureka.lib.readECF.MetaClass
+        The metadata object.
+    maxnspec: int, optional
+        Max. number of spectra to plot
+
+    Returns
+    -------
+    None
+    '''
+    optspec = spec.optspec.values
+    xval = spec.optspec.x.values
+    
+    fig_no = 3308
+    fig, (ax1, ax2) = plt.subplots(2,1,num=fig_no)
+    nspec = optspec.shape[0]
+    nspec_to_plot = np.min([maxnspec, nspec]) # number of spectra to plot
+    ax1.set_title("1D Spectra ("+str(int(nspec_to_plot))+" shown)")
+    ax2.set_title("Standard Deviation")
+    if nspec_to_plot < nspec:
+        indices = np.linspace(nspec*0.03,nspec*0.97,nspec_to_plot).astype(int)
+    else:
+        indices = np.arange(nspec_to_plot)
+    
+    for n in indices:
+        ax1.plot(xval, optspec[n], ls='-')
+    ax1.set_ylabel('Flux')
+    ax1.set_xlabel('Detector column')
+    
+    # pdb.set_trace()
+    medianspec = np.median(optspec, axis=0)
+    
+    std_opt_median =  np.std(optspec/medianspec,axis=0)
+    ax2.plot(xval, std_opt_median)
+    ax2.set_yscale("log")
+    fig.tight_layout()
+    ax2.set_ylabel('Std of Spec/Median')
+    ax2.set_xlabel('Detector column')
+    
+    fname = (f'figs{os.sep}fig{fig_no}' +
+             '_Spectra_and_std'+figure_filetype)
+    fig.savefig(meta.outputdir+fname, dpi=300)
