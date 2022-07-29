@@ -66,9 +66,9 @@ def lc_nodriftcorr(meta, wave_1d, optspec, optmask=None):
 
 
 
-def lc_SNR_inspection(spec, meta):
+def lc_SNR_inspection(spec, meta, exclude_range=None, rem_lin_trend=False):
     '''Inspection plot to to evaluate how close SNR of spectroscopic light curves is compared
-    to expectation from opterr (Fig 3102)
+    to expectation from opterr (Fig 3309)
 
     Parameters
     ----------
@@ -76,7 +76,11 @@ def lc_SNR_inspection(spec, meta):
         The Dataset object.
     meta : eureka.lib.readECF.MetaClass
         The metadata object.
-     
+    exclude_range : list, optional (default is None)
+        [frac_start, frac_end] (fractional window to exclude from the calculation)
+    rem_lin_trend : bool, optional (default is False)
+        if True, fit a straight line to the (baseline-only) time series and 
+        subtract it out of the data at each wavelength
     Returns
     -------
     None
@@ -93,34 +97,86 @@ def lc_SNR_inspection(spec, meta):
         detrendedDiff = np.zeros(len(fluxes)-2)
         for i in range(len(fluxes)-2):
             detrendedDiff[i]=0.5*(fluxes[i]+fluxes[i+2]) - fluxes[i+1]
-        scatter = np.median(np.abs(detrendedDiff)) / np.sqrt(3.0/2.0) * np.ones_like(flux)
+        scatter = np.nanmedian(np.abs(detrendedDiff)) / np.sqrt(3.0/2.0) * np.ones_like(flux)
         return scatter
+
+    if rem_lin_trend:
+        if exclude_range is None:
+            print("Rem. lin. trend not implemented yet if no baseline defined!")
+
+    if exclude_range is not None:
+        ind_start = int(exclude_range[0] * optspec.shape[0])
+        ind_end = int(exclude_range[1] * optspec.shape[0])
+        ind_baseline = np.where((np.arange(optspec.shape[0])<ind_start) + (np.arange(optspec.shape[0])>ind_end))
+        
+        
+        if rem_lin_trend: # fit a linear trend to the baseline at each wavelength and subtract it
+            print("Removing a linear trend from each wavelength in optspec (fitted to the baseline)...")
+            x_vals = np.arange(optspec.shape[0])
+            for iwv in range(optspec.shape[1]):
+                baseline_flux = optspec[ind_baseline[0],iwv]
+                m, b = np.polyfit(ind_baseline[0], baseline_flux, 1) # slope, intercept
+                med = np.nanmedian(baseline_flux)
+                optspec[:, iwv] = optspec[:, iwv] - (m * x_vals + b)  + med
+                
+        
+        medianspec_baseline = np.median(optspec[ind_baseline],axis=0)
+        
+        
 
     medianspec = np.median(optspec,axis=0)
 
-    scatter=np.zeros_like(x)
-    for ix,x in enumerate(x):
-        scatter[ix]=calc_high_freq_scatter(np.array(optspec[:,ix]))[0]
+    scatter=np.ones_like(x) * np.nan
+    if exclude_range is not None:
+        scatter_baseline=np.zeros_like(x)
+    for ix,xval in enumerate(x):
+        if np.sum(np.isnan(optspec.values)[:,ix]) == optspec.shape[0]:
+            continue
+        else:
+            scatter[ix]=calc_high_freq_scatter(np.array(optspec[:,ix]))[0]
+            if exclude_range is not None:
+                scatter_baseline[ix]=calc_high_freq_scatter(np.array(optspec[ind_baseline[0],ix]))[0]
+            
 
     fig,axs=plt.subplots(2,1,figsize=(10,9),sharex=True)
     
     ax=axs[0]
-    ax.plot(x,medianspec/np.std(optspec,axis=0),label='medianspec / np.std(optspec)')
-    ax.plot(x,medianspec/np.median(opterr,axis=0),label='medianspec / opterr')
-    ax.plot(x,medianspec/scatter,label='medianspec / high frequency scatter')
-    ax.set_xlabel('x [pixels]')
+    
+    if exclude_range is not None:
+        ax.plot(x,medianspec_baseline/np.std(optspec[ind_baseline],axis=0),label='medianspec / np.std(optspec)', color="C0")
+        ax.plot(x,medianspec_baseline/np.median(opterr[ind_baseline],axis=0),label='medianspec / opterr', color="C1")
+        ax.plot(x,medianspec_baseline/scatter_baseline,label='medianspec / high-frequency scatter', color="C2")
+        ax.set_title("Baseline: Exclude frac. "+str(exclude_range)+" = Integrations "+str(ind_start)+" to "+str(ind_end)+", Rem. lin. trend="+str(rem_lin_trend))
+
+    else:
+        ax.plot(x,medianspec/np.std(optspec,axis=0),label='medianspec / np.std(optspec)', color="C0")
+        ax.plot(x,medianspec/np.median(opterr,axis=0),label='medianspec / opterr', color="C1")
+        ax.plot(x,medianspec/scatter,label='medianspec / high-frequency scatter', color="C2")
+        ax.set_title("Transit included")
+
+    ax.set_xlabel('Detector column')
     ax.set_ylabel('SNR')
     ax.legend()
 
     ax=axs[1]
-    ax.plot(x, np.std(optspec,axis=0) / np.median(opterr,axis=0)  ,label='ratio', color='C1')
-    ax.plot(x, scatter / np.median(opterr,axis=0)  ,label='ratio', color='C2')
-    ax.set_xlabel('x [pixels]')
+    if exclude_range is not None:
+        ax.plot(x, np.std(optspec[ind_baseline],axis=0) / np.median(opterr[ind_baseline],axis=0)  ,label='std(optspec) / opterr', color='C0')
+        ax.plot(x, scatter_baseline / np.median(opterr[ind_baseline],axis=0)  ,label='high-frequency scatter / opterr', color='C2')
+    else:
+        ax.plot(x, np.std(optspec,axis=0) / np.median(opterr,axis=0)  ,label='std(optspec) / opterr', color='C0')
+        ax.plot(x, scatter / np.median(opterr,axis=0)  ,label='high-frequency scatter / opterr', color='C2')
+    
+    ax.set_xlabel('Detector column')
     ax.set_ylabel('observed noise / opterr')
     ax.axhline(1.0,ls=':',color='k')
     
+    ax.set_ylim(0., 10.)
+    ax.legend()
     plt.tight_layout()
 
+    fname = (f'figs{os.sep}fig3309' +
+             '_Inspect_SNR'+figure_filetype)
+    fig.savefig(meta.outputdir+fname, dpi=300)
 
 
 def image_and_background(data, meta, log, m):
