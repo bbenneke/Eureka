@@ -108,6 +108,7 @@ def lc_SNR_inspection(spec, meta, exclude_range=None, rem_lin_trend=False):
     else:
         ind_baseline = np.arange(optspec.shape[0])
         
+        
     if rem_lin_trend: # fit a linear trend to the baseline at each wavelength and subtract it
         print("Removing a linear trend from each wavelength in optspec (fitted to the baseline)...")
         x_vals = np.arange(optspec.shape[0])
@@ -522,7 +523,7 @@ def driftywidth(data, meta):
     if not meta.hide_plots:
         plt.pause(0.2)
 
-def optimal_spectrum_and_std(spec, meta, maxnspec=10, exclude_range=None):
+def optimal_spectrum_and_std(spec, meta, maxnspec=10, exclude_range=None, rem_lin_trend=False):
     '''Overplot all the extracted optimal spectra.
     Show the std as a function of wavelength. (Figs 3308) 
 
@@ -536,6 +537,9 @@ def optimal_spectrum_and_std(spec, meta, maxnspec=10, exclude_range=None):
         Max. number of spectra to plot
     exclude_range : list, optional (default is None)
         [frac_start, frac_end] (fractional window to exclude from the calculation)
+    rem_lin_trend : bool, optional (default is False)
+        if True, fit a straight line to the (baseline-only) time series and 
+        subtract it out of the data at each wavelength
     Returns
     -------
     None
@@ -551,7 +555,17 @@ def optimal_spectrum_and_std(spec, meta, maxnspec=10, exclude_range=None):
 
     else:
         ind_baseline = np.arange(nspec)
-    
+ 
+    if rem_lin_trend: # fit a linear trend to the baseline at each wavelength and subtract it
+        print("Removing a linear trend from each wavelength in optspec (fitted to the baseline)...")
+        x_vals = np.arange(optspec.shape[0])
+        for iwv in range(optspec.shape[1]):
+            baseline_flux = optspec[ind_baseline[0],iwv]
+            m, b = np.polyfit(ind_baseline[0], baseline_flux, 1) # slope, intercept
+            med = np.nanmedian(baseline_flux)
+            optspec[:, iwv] = optspec[:, iwv] - (m * x_vals + b)  + med
+            
+            
     fig_no = 3308
     fig, (ax1, ax2) = plt.subplots(2,1,num=fig_no)
     nspec_to_plot = np.min([maxnspec, nspec]) # number of spectra to plot
@@ -568,9 +582,14 @@ def optimal_spectrum_and_std(spec, meta, maxnspec=10, exclude_range=None):
     ax1.set_xlabel('Detector column')
     
     # pdb.set_trace()
-    medianspec = np.median(optspec, axis=0)
-    
-    std_opt_median =  np.std(optspec/medianspec,axis=0)
+    medianspec = np.median(optspec[ind_baseline], axis=0)
+            
+    if exclude_range is not None:
+        ax2.set_title("Baseline: Exclude frac. "+str(exclude_range)+" = Integrations "+str(ind_start)+" to "+str(ind_end)+", Rem. lin. trend="+str(rem_lin_trend))
+    else:
+        ax2.set_title("Transit included, Rem. lin. trend="+str(rem_lin_trend))
+
+    std_opt_median =  np.std(optspec[ind_baseline]/medianspec,axis=0)
     ax2.plot(xval, std_opt_median)
     ax2.set_yscale("log")
     fig.tight_layout()
