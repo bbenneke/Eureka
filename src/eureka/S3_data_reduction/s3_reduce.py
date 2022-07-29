@@ -455,6 +455,7 @@ def reduce(eventlabel, ecf_path=None, s2_meta=None):
                 plots_s3.lc_nodriftcorr(meta, spec.wave_1d, spec.optspec,
                                         optmask=spec.optmask)
                 plots_s3.optimal_spectrum_and_std(spec, meta)
+                plots_s3.lc_SNR_inspection(spec, meta)
 
             # Save results
             if meta.save_output:

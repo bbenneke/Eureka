@@ -65,6 +65,64 @@ def lc_nodriftcorr(meta, wave_1d, optspec, optmask=None):
         plt.pause(0.2)
 
 
+
+def lc_SNR_inspection(meta, x, optspec, opterr):
+    '''Inspection plot to to evaluate how close SNR of spectroscopic light curves is compared
+    to expectation from opterr (Fig 3102)
+
+    Parameters
+    ----------
+    meta : eureka.lib.readECF.MetaClass
+        The metadata object.
+    optspec : ndarray
+        The optimally extracted spectrum.
+    opterr : ndarray
+        The estimated uncertainty of optimally extracted spectrum.
+    Returns
+    -------
+    None
+    '''
+    
+    def calc_high_freq_scatter(flux,flag=None):
+        #Select the flux values to consider
+        if flag is None:
+            fluxes=flux
+        else:
+            fluxes=flux[flag==False]
+        #Calculate their random scatter
+        detrendedDiff = np.zeros(len(fluxes)-2)
+        for i in range(len(fluxes)-2):
+            detrendedDiff[i]=0.5*(fluxes[i]+fluxes[i+2]) - fluxes[i+1]
+        scatter = np.median(np.abs(detrendedDiff)) / np.sqrt(3.0/2.0) * np.ones_like(flux)
+        return scatter
+
+    medianspec = np.median(optspec,axis=0)
+
+    scatter=np.zeros_like(x)
+    for ix,x in enumerate(x):
+        scatter[ix]=calc_high_freq_scatter(np.array(optspec[:,ix]))[0]
+
+    fig,axs=plt.subplots(2,1,figsize=(10,9),sharex=True)
+    
+    ax=axs[0]
+    ax.plot(x,medianspec/np.std(optspec,axis=0),label='medianspec / np.std(optspec)')
+    ax.plot(x,medianspec/np.median(opterr,axis=0),label='medianspec / opterr')
+    ax.plot(x,medianspec/scatter,label='medianspec / high frequency scatter')
+    ax.set_xlabel('x [pixels]')
+    ax.set_ylabel('SNR')
+    ax.legend()
+
+    ax=axs[1]
+    ax.plot(x, np.std(optspec,axis=0) / np.median(opterr,axis=0)  ,label='ratio', color='C1')
+    ax.plot(x, scatter / np.median(opterr,axis=0)  ,label='ratio', color='C2')
+    ax.set_xlabel('x [pixels]')
+    ax.set_ylabel('observed noise / opterr')
+    ax.axhline(1.0,ls=':',color='k')
+    
+    plt.tight_layout()
+
+
+
 def image_and_background(data, meta, log, m):
     '''Make image+background plot. (Figs 3301)
 
