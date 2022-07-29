@@ -83,7 +83,7 @@ def lc_SNR_inspection(meta, x, optspec, opterr):
     None
     '''
     
-    def calcScatter(flux,flag=None):
+    def calc_high_freq_scatter(flux,flag=None):
         #Select the flux values to consider
         if flag is None:
             fluxes=flux
@@ -100,14 +100,14 @@ def lc_SNR_inspection(meta, x, optspec, opterr):
 
     scatter=np.zeros_like(x)
     for ix,x in enumerate(x):
-        scatter[ix]=calcScatter(np.array(optspec[:,ix]))[0]
+        scatter[ix]=calc_high_freq_scatter(np.array(optspec[:,ix]))[0]
 
     fig,axs=plt.subplots(2,1,figsize=(10,9),sharex=True)
     
     ax=axs[0]
-    ax.plot(x,medianspec/np.std(optspec,axis=0),label='medianspec/np.std(optspec)')
-    ax.plot(x,medianspec/np.median(opterr,axis=0),label='medianspec/opterr')
-    ax.plot(x,medianspec/scatter,label='medianspec/scatter_a_la_Bjorn')
+    ax.plot(x,medianspec/np.std(optspec,axis=0),label='medianspec / np.std(optspec)')
+    ax.plot(x,medianspec/np.median(opterr,axis=0),label='medianspec / opterr')
+    ax.plot(x,medianspec/scatter,label='medianspec / high frequency scatter')
     ax.set_xlabel('x [pixels]')
     ax.set_ylabel('SNR')
     ax.legend()
