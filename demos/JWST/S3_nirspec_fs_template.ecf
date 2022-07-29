@@ -38,6 +38,7 @@ isplots_S3      3           # Generate few (1), some (3), or many (5) figures (O
 vmin            0.97        # Sets the vmin of the color bar for Figure 3101.
 vmax            1.03        # Sets the vmax of the color bar for Figure 3101.
 time_axis       'y'         # Determines whether the time axis in Figure 3101 is along the y-axis ('y') or the x-axis ('x')
+exclude_range   [0.4, 0.6]  # Fractional range of the data to be excluded in the SNR calculation to avoid the transit. Set to None to exclude nothing
 testing_S3      False       # Boolean, set True to only use last file and generate select figures
 hide_plots      False       # If True, plots will automatically be closed rather than popping up
 save_output     True        # Save outputs for use in S4
