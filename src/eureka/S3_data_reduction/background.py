@@ -141,7 +141,7 @@ def BGsubtraction(data, meta, log, isplots):
                                      args=(data.flux[n].values,
                                            data.mask[n].values,
                                            data.v0[n].values,
-                                           data.variance[n].values, 
+                                           data.variance[n].values,
                                            data.guess[n].values,
                                            n, meta, isplots_all[n],),
                                      callback=writeBG_WFC3)
@@ -177,6 +177,8 @@ def BGsubtraction(data, meta, log, isplots):
     # 9.  Background subtraction
     # Perform background subtraction
     data['flux'] -= data.bg
+    if hasattr(data, 'medflux'):
+        data['medflux'] -= np.median(data.bg, axis=0)
 
     return data
 
@@ -296,7 +298,7 @@ def fitbg(dataim, meta, mask, x1, x2, deg=1, threshold=5, isrotate=False,
                     # stdres = np.std(residuals)
                     # Median Absolute Deviation (slower but more robust)
                     # stdres  = np.median(np.abs(np.ediff1d(residuals)))
-                    # Mean Absolute Deviation (good comprimise)
+                    # Mean Absolute Deviation (good compromise)
                     stdres = np.mean(np.abs(np.ediff1d(residuals)))
                     if stdres == 0:
                         stdres = np.inf
@@ -324,6 +326,7 @@ def fitbg(dataim, meta, mask, x1, x2, deg=1, threshold=5, isrotate=False,
                         plt.savefig(meta.outputdir + fname, dpi=300)
                         if not meta.hide_plots:
                             plt.pause(0.01)
+
 
     if isrotate == 1:
         bg = (bg.T)[::-1]
