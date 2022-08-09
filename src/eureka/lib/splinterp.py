@@ -25,18 +25,15 @@ def splinterp(x2, x, y):
 
     Examples
     --------
-    .. highlight:: python
-    .. code-block:: python
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
 
-        >>> import numpy as np
-        >>> import matplotlib.pyplot as plt
+    >>> x = np.arange(21)/20.0 * 2.0 * np.pi
+    >>> y = np.sin(x)
+    >>> x2 = np.arange(41)/40.0 *2.0 * np.pi
 
-        >>> x = np.arange(21)/20.0 * 2.0 * np.pi
-        >>> y = np.sin(x)
-        >>> x2 = np.arange(41)/40.0 *2.0 * np.pi
-
-        >>> y2 = splinterp(x2, x, y)
-        >>> plt.plot(x2,y2)
+    >>> y2 = splinterp(x2, x, y)
+    >>> plt.plot(x2,y2)
     """
     tck = si.splrep(x, y)
     y2 = si.splev(x2, tck)

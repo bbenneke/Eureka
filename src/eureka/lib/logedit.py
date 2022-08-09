@@ -4,48 +4,45 @@ class Logedit:
 
     Examples
     --------
-    .. highlight:: python
-    .. code-block:: python
+    >>> from logedit import Logedit
+    >>> message1 = 'This message will be logged and displayed.'
+    >>> message2 = 'This message too.'
+    >>> message3 = 'This one is Not going to delete previous lines.'
+    >>> message4 = ('This one copies previous lines and keeps previous log, '
+                    'but saves to new log.')
+    >>> message5 = 'This one deletes previous lines.'
 
-        >>> from logedit import Logedit
-        >>> message1 = 'This message will be logged and displayed.'
-        >>> message2 = 'This message too.'
-        >>> message3 = 'This one is Not going to delete previous lines.'
-        >>> message4 = ('This one copies previous lines and keeps previous '
-                        'log, but saves to new log.')
-        >>> message5 = 'This one deletes previous lines.'
+    >>> logname = 'out.log'
+    >>> logname2 = 'out2.log'
 
-        >>> logname = 'out.log'
-        >>> logname2 = 'out2.log'
+    >>> # Create and print lines to a log
+    >>> log = Logedit(logname)
+    >>> log.writelog(message1)
+    This message will be logged and displayed.
+    >>> log.writelog(message2)
+    This message too.
+    >>> log.closelog()
 
-        >>> # Create and print lines to a log
-        >>> log = Logedit(logname)
-        >>> log.writelog(message1)
-        This message will be logged and displayed.
-        >>> log.writelog(message2)
-        This message too.
-        >>> log.closelog()
+    >>> # Edit log without overiding previous lines
+    >>> log = Logedit(logname, read=logname)
+    >>> log.writelog(message3)
+    This one is Not going to delete previous lines.
+    >>> log.closelog()
 
-        >>> # Edit log without overiding previous lines
-        >>> log = Logedit(logname, read=logname)
-        >>> log.writelog(message3)
-        This one is Not going to delete previous lines.
-        >>> log.closelog()
+    >>> # copy a pre-existing log on a new log, and edit it.
+    >>> log = Logedit(logname2, read=logname)
+    >>> log.writelog(message4)
+    This one copies previous lines and keeps previous log, but saves to
+    new log.
+    >>> log.closelog()
 
-        >>> # copy a pre-existing log on a new log, and edit it.
-        >>> log = Logedit(logname2, read=logname)
-        >>> log.writelog(message4)
-        This one copies previous lines and keeps previous log, but saves to
-        new log.
-        >>> log.closelog()
+    >>> # overite a pre-existing log
+    >>> log = Logedit(logname)
+    >>> log.writelog(message5)
+    This one deletes previous lines.
+    >>> log.closelog()
 
-        >>> # overite a pre-existing log
-        >>> log = Logedit(logname)
-        >>> log.writelog(message5)
-        This one deletes previous lines.
-        >>> log.closelog()
-
-        >>> # See the output files: 'out.log' and 'out2.log' to see results.
+    >>> # See the output files: 'out.log' and 'out2.log' to see the results.
 
     Notes
     -----
@@ -97,8 +94,8 @@ class Logedit:
         mute : bool; optional
             If True, only log and do not pring. Defaults to False.
         end : str; optional
-            Can be set to '\\r' to have the printed line overwritten which
-            is useful for progress bars. Defaults to '\\n'.
+            Can be set to '\r' to have the printed line overwritten which
+            is useful for progress bars. Defaults to '\n'.
         """
         # print to screen:
         if not mute:
@@ -120,8 +117,8 @@ class Logedit:
         mute : bool; optional
             If True, only log and do not pring. Defaults to False.
         end : str; optional
-            Can be set to '\\r' to have the printed line overwritten which
-            is useful for progress bars. Defaults to '\\n'.
+            Can be set to '\r' to have the printed line overwritten which
+            is useful for progress bars. Defaults to '\n'.
         """
         self.writelog(message, mute, end)
         self.closelog()

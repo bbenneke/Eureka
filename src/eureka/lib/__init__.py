@@ -13,6 +13,7 @@ from . import plots
 from . import readECF
 from . import readEPF
 from . import smooth
+from . import smoothing
 from . import sort_nicely
 from . import splinterp
 from . import suntimecorr

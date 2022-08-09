@@ -82,7 +82,7 @@ def download_exoctk_data(download_location=os.path.expanduser('~')):
 
     Parameters
     ----------
-    download_location : str; optional
+    download_location : string; optional
         The path to where the ExoCTK data package will be downloaded.
         The default setting is the user's $HOME directory.
     """
@@ -506,12 +506,12 @@ def build_target_url(target_name):
 
     Parameters
     ----------
-    target_name : str
+    target_name : string
         The name of the target transit.
 
     Returns
     -------
-    target_url : str
+    target_url : string
     '''
     # Encode the target name string.
     encode_target_name = urllib.parse.quote(target_name, encoding='utf-8')
@@ -526,12 +526,12 @@ def get_canonical_name(target_name):
 
     Parameters
     ----------
-    target_name : str
+    target_name : string
         The name of the target transit.
 
     Returns
     -------
-    canonical_name : str
+    canonical_name : string
     '''
     target_url = "https://exo.mast.stsci.edu/api/v0.1/exoplanets/identifiers/"
 
@@ -607,7 +607,7 @@ def get_target_data(target_name):
 
     Parameters
     ----------
-    target_name : str
+    target_name : string
         The name of the target transit
 
     Returns

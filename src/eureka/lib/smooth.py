@@ -2,7 +2,7 @@ import numpy as np
 
 
 def smooth(x, window_len=10, window='hanning'):
-    """Smooth the data using a window with requested size.
+    """smooth the data using a window with requested size.
 
     This method is based on the convolution of a scaled window with the signal.
     The signal is prepared by introducing reflected copies of the signal
@@ -27,12 +27,9 @@ def smooth(x, window_len=10, window='hanning'):
 
     Examples
     --------
-    .. highlight:: python
-    .. code-block:: python
-
-        >>> t=linspace(-2,2,0.1)
-        >>> x=sin(t)+randn(len(t))*0.1
-        >>> y=smooth(x)
+    t=linspace(-2,2,0.1)
+    x=sin(t)+randn(len(t))*0.1
+    y=smooth(x)
 
     See Also
     --------

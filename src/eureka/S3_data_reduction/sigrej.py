@@ -88,35 +88,30 @@ def sigrej(data, sigma, mask=None, estsig=None, ival=False, axis=0,
     --------
     Define the N-element vector of sample data.
 
-    .. highlight:: python
-    .. code-block:: python
+    >>> print(mean(x), stddev(x), median(x), medstddev(x))
+    1438.47      5311.67      67.0000      5498.10
+    >>> sr.sigrej(x, [9,3]), ival=ival, fmean=fmean, fmedian=fmedian)
 
-        >>> print(mean(x), stddev(x), median(x), medstddev(x))
-        1438.47      5311.67      67.0000      5498.10
-        >>> sr.sigrej(x, [9,3]), ival=ival, fmean=fmean, fmedian=fmedian)
+    >>> x = np.array([65., 667, 84, 968, 62, 70, 66, 78, 47, 71, 56, 65, 60])
+    >>> q,w,e,r,t,y = sr.sigrej(x, [2,1], ival=True, fmean=True,
+    >>>                         fstddev=True, fmedian=True, fmedstddev=True)
 
-        >>> x = np.array([65., 667, 84, 968, 62, 70, 66,
-        >>>               78, 47, 71, 56, 65, 60])
-        >>> q,w,e,r,t,y = sr.sigrej(x, [2,1], ival=True, fmean=True,
-        >>>                         fstddev=True, fmedian=True,
-        >>>                         fmedstddev=True)
-
-        >>> print(q)
-        [True False True False True True True True True True True True
-        True]
-        >>> print(w)
-        [[66.          65.5       ]
-        [313.02675604  181.61572819]]
-        >>> print(e)
-        65.8181818182
-        >>> print(r)
-        10.1174916043
-        >>> print(t)
-        65.0
-        >>> print(y)
-        10.1538170163
-        >>> print(fmean, fmedian)
-        67.0000      67.0000
+    >>> print(q)
+    [ True False  True False  True  True  True  True  True  True  True  True
+    True]
+    >>> print(w)
+    [[  66.           65.5       ]
+    [ 313.02675604  181.61572819]]
+    >>> print(e)
+    65.8181818182
+    >>> print(r)
+    10.1174916043
+    >>> print(t)
+    65.0
+    >>> print(y)
+    10.1538170163
+    >>> print(fmean, fmedian)
+    67.0000      67.0000
     '''
     # Get sizes
     dims = list(np.shape(data))

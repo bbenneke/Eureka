@@ -79,8 +79,7 @@ def sum_reads(spec, lc, meta):
     lc.driftxwidth['time'] = time
     lc.driftmask['time'] = time
 
-    # Update meta parameters
+    # Update nreads
     meta.nreads = 1
-    meta.n_int = len(time)
 
     return spec, lc, meta

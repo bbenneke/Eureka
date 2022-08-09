@@ -27,6 +27,14 @@ class Parameter:
         prior : str; optional
             Type of prior, ['U','LU','N']. Defaults to None.
         """
+        # If value is a list, distribute the elements
+        if isinstance(value, list):
+            value, *other = value
+            if len(other) > 1:
+                ptype, *other = other
+            if len(other) > 0:
+                priorpar1, priorpar2 = other
+
         # Set the attributes
         self.name = name
         self.value = value
@@ -109,8 +117,12 @@ class Parameter:
             Parameter type, ['free','fixed','independent','shared',
             'white_free', 'white_fixed']
         """
-        if param_type not in ['free', 'fixed', 'independent', 'shared',
-                              'white_free', 'white_fixed']:
+        if param_type in [True, False]:
+            raise ValueError("Boolean ptype values are deprecated. ptype must "
+                             "now be 'free', 'fixed', 'independent', "
+                             "'shared', 'white_free', oe 'white_fixed'")
+        elif param_type not in ['free', 'fixed', 'independent', 'shared',
+                                'white_free', 'white_fixed']:
             raise ValueError("ptype must be 'free', 'fixed', 'independent', "
                              "'shared', 'white_free', or 'white_fixed'")
 

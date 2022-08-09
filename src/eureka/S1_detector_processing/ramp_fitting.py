@@ -627,6 +627,7 @@ def ramp_fit_mean(ramp_data, gain_2d, readnoise_2d, save_opt, weighting):
     effintim = (nframes + groupgap) * frame_time
     print(effintim)
     integ_err = np.sqrt(np.sum(err**2, axis=1))
+    int_times = np.array([])
     # Compute the final 2D array of differences; create rate array
     print(data.shape)
     sum_int = np.sum(data, axis=1)
@@ -647,7 +648,8 @@ def ramp_fit_mean(ramp_data, gain_2d, readnoise_2d, save_opt, weighting):
     ramp_data.groupdq = groupdq
     ramp_data.pixeldq = inpixeldq
     image_info = (c_rates, groupdq, var_2d_poisson, var_2d_rnoise, image_err)
-    integ_info = (sum_int, integ_dq, var_poisson, var_rnoise, integ_err)
+    integ_info = (sum_int, integ_dq, var_poisson, var_rnoise, int_times,
+                  integ_err)
 
     return image_info, integ_info, None
 

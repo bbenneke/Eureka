@@ -27,7 +27,6 @@ class Model:
         self._time = None
         self._flux = None
         self._units = q.day
-        self.freenames = None
         self._parameters = Parameters()
         self.components = None
         self.modeltype = None
@@ -106,21 +105,24 @@ class Model:
 
         return interp_flux
 
-    def update(self, newparams, **kwargs):
+    def update(self, newparams, names, **kwargs):
         """Update the model with new parameter values.
 
         Parameters
         ----------
         newparams : ndarray
             New parameter values.
+        names : list
+            Parameter names.
         **kwargs : dict
             Unused by the base
             eureka.S5_lightcurve_fitting.models.Model class.
         """
-        for val, arg in zip(newparams, self.freenames):
-            # For now, the dict and Parameter are separate
-            self.parameters.dict[arg][0] = val
-            getattr(self.parameters, arg).value = val
+        for ii, arg in enumerate(names):
+            if hasattr(self.parameters, arg):
+                val = getattr(self.parameters, arg).values[1:]
+                val[0] = newparams[ii]
+                setattr(self.parameters, arg, val)
         self._parse_coeffs()
         return
 
@@ -408,7 +410,7 @@ class CompositeModel(Model):
         else:
             new_time = self.time
 
-        flux = np.ones(len(new_time)*self.nchan)
+        flux = np.ones(len(self.time)*self.nchan)
 
         # Evaluate flux at each model
         for model in self.components:
@@ -421,18 +423,20 @@ class CompositeModel(Model):
                     flux *= model.eval(**kwargs)
         return flux, new_time
 
-    def update(self, newparams, **kwargs):
+    def update(self, newparams, names, **kwargs):
         """Update parameters in the model components.
 
         Parameters
         ----------
         newparams : ndarray
             New parameter values.
+        names : list
+            Parameter names.
         **kwargs : dict
             Additional parameters to pass to
             eureka.S5_lightcurve_fitting.models.Model.update().
         """
         # Evaluate flux at each model
         for model in self.components:
-            model.update(newparams, **kwargs)
+            model.update(newparams, names, **kwargs)
         return
