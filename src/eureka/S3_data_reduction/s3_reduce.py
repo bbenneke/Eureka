@@ -258,7 +258,12 @@ def reduce(eventlabel, ecf_path=None, s2_meta=None):
 
                 # Start masking pixels based on DQ flags
                 if meta.dqmask:
-                    dqmask = np.where((data['dq'] != 0) & (data['dq'] != 2))
+                    if meta.inst == 'nirspec' and data.mhdr['GRATING'] == 'G395H':
+                        # For now, keep sat flags masked for G395H
+                        # dqmask = np.where(data['dq'] != 0)
+                        dqmask = np.where(data['dq'] == 1)
+                    else:
+                        dqmask = np.where((data['dq'] != 0) & (data['dq'] != 2))
                     data['mask'].values[dqmask] = 0
 
                 # Check if arrays have NaNs
@@ -351,6 +356,8 @@ def reduce(eventlabel, ecf_path=None, s2_meta=None):
 
                 # Compute median frame
                 medapdata = np.median(apdata, axis=0)
+                # Compute a median mask for meddata profile construction
+                medapmask = np.median(apmask, axis=0).astype(bool)
                 # Already converted DN to electrons, so gain = 1 for optspex
                 gain = 1
                 iterfn = range(meta.int_start, meta.n_int)
@@ -373,7 +380,7 @@ def reduce(eventlabel, ecf_path=None, s2_meta=None):
                                          fittype=meta.fittype,
                                          window_len=meta.window_len,
                                          deg=meta.prof_deg, n=n, m=m,
-                                         meddata=medapdata)
+                                         meddata=medapdata, medmask=medapmask)
 
                 # Mask out NaNs and Infs
                 optspec_ma = np.ma.masked_invalid(data.optspec.values)

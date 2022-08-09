@@ -4,6 +4,7 @@ from astropy.io import fits
 import astraeus.xarrayIO as xrio
 from . import nircam, sigrej
 from ..lib.util import read_time
+from scipy.signal import medfilt
 
 
 def read(filename, data, meta, log):
@@ -211,6 +212,10 @@ def find_column_median_shifts(data):
     shifts[column_coms < 0] = 0
     shifts[column_coms > nb_rows] = 0
 
+    # Smooth the shifts with a running median
+    shifts_smooth = medfilt(shifts, kernel_size=11).astype(int)
+    shifts = shifts_smooth
+
     return shifts, new_center
 
 
@@ -314,6 +319,7 @@ def straighten_trace(data, meta, log):
     data.err.values = roll_columns(data.err.values, shifts)
     data.dq.values = roll_columns(data.dq.values, shifts)
     data.v0.values = roll_columns(data.v0.values, shifts)
+    data.mask.values = roll_columns(data.mask.values, shifts)
     
     # update the new src_ypos
     log.writelog(f'  Updating src_ypos to new center, row {new_center}...',
