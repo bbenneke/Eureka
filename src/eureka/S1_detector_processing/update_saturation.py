@@ -5,6 +5,10 @@
 # PA Roy, July 27th 2022
 import numpy as np
 from jwst.datamodels import dqflags
+import pdb
+from . import plots_s1
+import h5py
+
 
 def update_sat(input_model, log, meta):
     '''Function that flags saturated pixels more aggressively.
@@ -26,27 +30,38 @@ def update_sat(input_model, log, meta):
     '''
     log.writelog('  Applying a more severe saturation flagging.')
     # Compute the median of the groupdq map
-    median_sat = np.median(input_model.groupdq, axis=0).astype(int)
+    log.writelog('  Creating a saturation map based on the percentile set in the ecf file.')
+    perc_sat = np.percentile(input_model.groupdq, meta.dq_sat_percentile, axis=0).astype(int)
+
+    if meta.isplots>=1:
+        plots_s1.saturation_mask(perc_sat, meta, log, step="perc_initial_flag")        
+        
     # Store the saturation flag value
     sat_flag = dqflags.pixel['SATURATED']
-    median_sat_mask = (median_sat == sat_flag)
+    perc_sat_mask = (perc_sat == sat_flag)
 
     # Expand saturated pixels to full columns
     log.writelog('    Expand flags along columns.')
-    new_sat_mask = 1 * median_sat_mask
+    new_sat_mask = 1 * perc_sat_mask
     ngrp = new_sat_mask.shape[0]
     ncols = new_sat_mask.shape[1]
     nrows = new_sat_mask.shape[2]
     for i in range(ngrp):
-        is_col_sat = np.sum(median_sat_mask[i, :, :], axis=0).astype(bool)
+        is_col_sat = np.sum(perc_sat_mask[i, :, :], axis=0).astype(bool)
         new_sat_mask[i, :, :] = np.broadcast_to(is_col_sat, (ncols, nrows))
 
+    if meta.isplots>=1:
+        plots_s1.saturation_mask(new_sat_mask, meta, log, step="after_expand_columns")   
+        
     # Expand saturation flags to one group before
     if meta.expand_prev_group:
         log.writelog('    Expand flags to previous group.')
         for i in range(ngrp-1):
             new_sat_mask[i, :, :] += new_sat_mask[i+1, :, :] 
 
+        if meta.isplots>=1:
+            plots_s1.saturation_mask(new_sat_mask, meta, log, step="after_expand_prevgroup") 
+            
     # Make sure that we did not put saturation in Group 1
     # If so, remove it (o.w. no info at all for ramp_fitting)
     if np.count_nonzero(new_sat_mask[0]) > 0:
@@ -68,6 +83,7 @@ def update_sat(input_model, log, meta):
     # Now broadcast that mask back to the number of ints
     new_sat_mask = np.broadcast_to(new_sat_mask, input_model.groupdq.shape)
 
+
     # Saturation flagging condition
     # Where our saturation mask is True and dq is not already flagged
     condition = ((new_sat_mask == True) & (input_model.groupdq == 0))
@@ -75,4 +91,15 @@ def update_sat(input_model, log, meta):
     # Now update the groupdq map
     input_model.groupdq[condition] = sat_flag
 
+
+    # Save the groupdq map
+    h5f = h5py.File(meta.outputdir+'new_saturation_mask.h5', 'w')
+    h5f.create_dataset('sat_mask', data=new_sat_mask)
+    h5f.close()
+    
+    if meta.isplots>=1:
+        plots_s1.saturation_mask(input_model.groupdq[0], meta, log, step="final_updated_groupdq")
+    
+    
+        
     return input_model
