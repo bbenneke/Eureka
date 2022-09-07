@@ -480,7 +480,7 @@ def profile_gauss(subdata, mask, threshold=10, guess=None, isplots=0):
 
 def optimize(meta, subdata, mask, bg, spectrum, Q, v0, p5thresh=10,
              p7thresh=10, fittype='smooth', window_len=21, deg=3,
-             windowtype='hanning', n=0, m=0, meddata=None, medmask=None):
+             windowtype='hanning', n=0, m=0, meddata=None, medmask=None, runmeddata=None):
     '''Extract optimal spectrum with uncertainties.
 
     Parameters
@@ -547,6 +547,12 @@ def optimize(meta, subdata, mask, bg, spectrum, Q, v0, p5thresh=10,
                                      isplots=meta.isplots_S3)
         elif fittype == 'meddata':
             profile = profile_meddata(subdata, medmask, meddata,
+                                      threshold=p5thresh,
+                                      isplots=meta.isplots_S3)
+        elif fittype == 'runmeddata':
+            # just like meddata, but using a running median
+            # so that it changes during the transit
+            profile = profile_meddata(subdata, medmask, runmeddata,
                                       threshold=p5thresh,
                                       isplots=meta.isplots_S3)
         elif fittype == 'wavelet2D':
