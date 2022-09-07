@@ -36,6 +36,7 @@ from ..lib import logedit
 from ..lib import readECF
 from ..lib import manageevent as me
 from ..lib import util
+from scipy.ndimage import median_filter
 
 
 def reduce(eventlabel, ecf_path=None, s2_meta=None):
@@ -356,6 +357,9 @@ def reduce(eventlabel, ecf_path=None, s2_meta=None):
 
                 # Compute median frame
                 medapdata = np.median(apdata, axis=0)
+                # Compute a running median frame
+                runningmedapdata = median_filter(apdata, size=(meta.runmed_len, 1, 1),
+                                                 mode='reflect')
                 # Compute a median mask for meddata profile construction
                 medapmask = np.median(apmask, axis=0).astype(bool)
                 # Already converted DN to electrons, so gain = 1 for optspex
@@ -380,7 +384,8 @@ def reduce(eventlabel, ecf_path=None, s2_meta=None):
                                          fittype=meta.fittype,
                                          window_len=meta.window_len,
                                          deg=meta.prof_deg, n=n, m=m,
-                                         meddata=medapdata, medmask=medapmask)
+                                         meddata=medapdata, medmask=medapmask,
+                                         runmeddata=runningmedapdata[n])
 
                 # Mask out NaNs and Infs
                 optspec_ma = np.ma.masked_invalid(data.optspec.values)
