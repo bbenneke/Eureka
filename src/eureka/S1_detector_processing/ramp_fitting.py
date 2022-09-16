@@ -95,19 +95,82 @@ default='none') # max number of processes to create
             if self.s1_meta.grouplevel_bg:
                 from ..S3_data_reduction import background as bkg
                 import astraeus.xarrayIO as xrio
+                import scipy.signal as sgn
+                import scipy.ndimage as spn
+                from astropy.stats import sigma_clip
 
                 all_data = input_model.data
                 dq = input_model.groupdq
+                
+                ncol = all_data.shape[3]
+                nrow = all_data.shape[2]
+                trace_mask = np.ones_like(all_data[0,0,:,:])
+
+                if self.s1_meta.masktrace:
+                    from ..S3_data_reduction import optspex
+                    from ..S3_data_reduction import straighten
+
+                    ngrp = all_data.shape[1]
+                    #grabbing things from optspex for now
+                    med_data = np.nanmedian(all_data[:,ngrp-1,:,:],axis=0)
+                    smt_data = spn.median_filter(med_data,size = (1,self.s1_meta.window_len))
+                    
+                    column_max = np.nanargmax(smt_data,axis = 0)
+                    smooth_coms = sgn.medfilt(column_max,kernel_size=self.s1_meta.window_len)
+
+                    smooth_coms[:self.s1_meta.ignore_low] = smooth_coms[self.s1_meta.ignore_low]
+                    
+                    # now create mask based on smooth_coms center.                  
+                    for nc in range(ncol):
+                        mask_low = np.nanmax([0, smooth_coms[nc]-self.s1_meta.expand_mask])
+                        mask_hih = np.nanmin([smooth_coms[nc]+self.s1_meta.expand_mask,nrow-1])
+
+                        trace_mask[mask_low:mask_hih,nc] = np.nan                
+                
                 self.s1_meta.inst = input_model.meta.instrument.name.lower()
                 self.s1_meta.int_start = 0
                 self.s1_meta.n_int = all_data.shape[0]
+                
+                ## even-odd subtraction
+                if self.s1_meta.refpix_corr:
+                    ncol = all_data.shape[3]
+                    nrow = all_data.shape[2]
+                    row_ind_ref = np.append(np.arange(nrow)[:self.s1_meta.npix_top],np.arange(nrow)[nrow-self.s1_meta.npix_bot:])
+                    evn_row_ref = row_ind_ref[np.where(row_ind_ref % 2 == 0)[0]]
+                    odd_row_ref = row_ind_ref[np.where(row_ind_ref % 2 == 1)[0]]
+
+                    row_ind = np.arange(nrow)
+                    evn_ind = np.where(row_ind % 2 == 0)[0]
+                    odd_ind = np.where(row_ind % 2 == 1)[0]
+                    
+                    npix_top = self.s1_meta.npix_top
+                    npix_bot = self.s1_meta.npix_bot
+                    for nint in range(all_data.shape[0]):
+                        for ngrp in range(all_data.shape[1]):
+                            intgrp_data = all_data[nint,ngrp,:,:]
+                            intgrp_mask = np.ones(intgrp_data.shape, dtype=bool)
+                            #dqmask = np.where(dq[:,ngrp,:,:] != 0)
+                            dqmask = np.where((dq[nint,ngrp,:,:] % 2 == 1) | (dq[nint,ngrp,:,:] == 2))
+                            intgrp_data[dqmask] = np.nan
+                            intgrp_data *= trace_mask
+
+                            odd_med = np.nanmedian(intgrp_data[odd_row_ref,:])
+                            evn_med = np.nanmedian(intgrp_data[evn_row_ref,:])
+                            
+                            all_data[nint,ngrp,odd_ind,:] -= odd_med
+                            all_data[nint,ngrp,evn_ind,:] -= evn_med                
 
                 for ngrp in range(all_data.shape[1]):
                     grp_data = all_data[:,ngrp,:,:]
                     grp_mask = np.ones(grp_data.shape, dtype=bool)
-                    dqmask = np.where(dq[:,ngrp,:,:]!= 0)
+                    #dqmask = np.where(dq[:,ngrp,:,:] != 0)
+                    dqmask = np.where((dq[:,ngrp,:,:] % 2 == 1) | (dq[:,ngrp,:,:] == 2))
                     grp_mask[dqmask] = 0
 
+                    trace_mask = np.broadcast_to(trace_mask,(grp_data.shape[0],grp_data.shape[1],grp_data.shape[2]))
+                    trace_mask = np.nan_to_num(trace_mask).astype(bool)
+                    grp_mask *= trace_mask
+                    
                     xrdata = (['time', 'y', 'x'], grp_data)
                     xrmask = (['time', 'y', 'x'], grp_mask)                
                     xrdict = dict(flux=xrdata, mask=xrmask)
