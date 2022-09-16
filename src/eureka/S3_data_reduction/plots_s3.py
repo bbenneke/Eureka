@@ -44,13 +44,13 @@ def lc_nodriftcorr(meta, wave_1d, optspec, optmask=None):
     plt.figure(3101, figsize=(8, 8))
     plt.clf()
     if meta.time_axis == 'y':
-        plt.imshow(normspec, origin='lower', aspect='auto',interpolation='nearest',
+        plt.imshow(normspec, origin='lower', aspect='auto',
                    extent=[wmin, wmax, 0, meta.n_int], vmin=meta.vmin,
                    vmax=meta.vmax, cmap=plt.cm.RdYlBu_r)
         plt.ylabel('Integration Number')
         plt.xlabel(r'Wavelength ($\mu m$)')
     else:
-        plt.imshow(normspec.swapaxes(0, 1), origin='lower', aspect='auto',interpolation='nearest',
+        plt.imshow(normspec.swapaxes(0, 1), origin='lower', aspect='auto',
                    extent=[0, meta.n_int, wmin, wmax], vmin=meta.vmin,
                    vmax=meta.vmax, cmap=plt.cm.RdYlBu_r)
         plt.ylabel(r'Wavelength ($\mu m$)')
@@ -394,17 +394,15 @@ def profile(meta, profile, submask, n, m):
                          np.ma.getmaskarray(submask))
     profile = np.ma.masked_where(mask, profile)
     submask = np.ma.masked_where(mask, submask)
-    #vmax = 0.05*np.ma.max(profile*submask)
-    vmax = np.ma.max(profile*submask)
+    vmax = 0.05*np.ma.max(profile*submask)
     vmin = np.ma.min(profile*submask)
     plt.figure(3304)
     plt.clf()
     plt.suptitle(f"Profile - Integration {n}")
-    plt.imshow(profile*submask, aspect='auto', origin='lower',interpolation='nearest',
+    plt.imshow(profile*submask, aspect='auto', origin='lower',
                vmax=vmax, vmin=vmin)
-    plt.ylabel('Relative Pixel Position')
+    plt.ylabel('Relative Pixel Postion')
     plt.xlabel('Relative Pixel Position')
-    plt.colorbar()
     plt.tight_layout()
     file_number = str(m).zfill(int(np.floor(np.log10(meta.num_data_files))+1))
     int_number = str(n).zfill(int(np.floor(np.log10(meta.n_int))+1))
