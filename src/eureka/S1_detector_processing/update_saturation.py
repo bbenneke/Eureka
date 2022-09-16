@@ -29,26 +29,40 @@ def update_sat(input_model, log, meta):
         The input group-level data product with updated saturation flags.
     '''
     log.writelog('  Applying a more severe saturation flagging.')
+    
     # Compute the median of the groupdq map
-    log.writelog('  Creating a saturation map based on the percentile set in the ecf file.')
-    perc_sat = np.percentile(input_model.groupdq, meta.dq_sat_percentile, axis=0).astype(int)
-
+    if meta.dq_sat_mode == "percentile":
+        log.writelog('  Creating a saturation map based on the percentile set in the ecf file.')
+        median_sat = np.percentile(input_model.groupdq, meta.dq_sat_percentile, axis=0).astype(int)
+    elif meta.dq_sat_mode == "min":
+        log.writelog('  Creating a saturation map based on the minimum saturated group for each pixel.')
+        median_sat = np.max(input_model.groupdq, axis=0).astype(int)    
+    elif meta.dq_sat_mode == "defined":
+        log.writelog('  Using user defined saturation columns.')
+        median_sat = np.zeros_like(np.median(input_model.groupdq, axis=0))
+        
     if meta.isplots>=1:
-        plots_s1.saturation_mask(perc_sat, meta, log, step="perc_initial_flag")        
+        plots_s1.saturation_mask(median_sat, meta, log, step="perc_initial_flag")        
         
     # Store the saturation flag value
     sat_flag = dqflags.pixel['SATURATED']
-    perc_sat_mask = (perc_sat == sat_flag)
+    median_sat_mask = (median_sat == sat_flag)
 
     # Expand saturated pixels to full columns
     log.writelog('    Expand flags along columns.')
     new_sat_mask = 1 * perc_sat_mask
-    ngrp = new_sat_mask.shape[0]
+    ngrp  = new_sat_mask.shape[0]
     ncols = new_sat_mask.shape[1]
     nrows = new_sat_mask.shape[2]
-    for i in range(ngrp):
-        is_col_sat = np.sum(perc_sat_mask[i, :, :], axis=0).astype(bool)
-        new_sat_mask[i, :, :] = np.broadcast_to(is_col_sat, (ncols, nrows))
+    if meta.dq_sat_mode == "percentile" or meta.dq_sat_mode == "min":
+        for i in range(ngrp):
+            is_col_sat = np.sum(median_sat_mask[i, :, :], axis=0).astype(bool)
+            new_sat_mask[i, :, :] = np.broadcast_to(is_col_sat, (ncols, nrows))
+    elif meta.dq_sat_mode == "defined":
+        for i in range(ngrp):
+            c1 = meta.dq_sat_columns[i][0]
+            c2 = meta.dq_sat_columns[i][1]
+            new_sat_mask[i,:,c1:c2] = sat_flag
 
     if meta.isplots>=1:
         plots_s1.saturation_mask(new_sat_mask, meta, log, step="after_expand_columns")   
