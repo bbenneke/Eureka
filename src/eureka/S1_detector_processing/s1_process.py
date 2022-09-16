@@ -173,6 +173,7 @@ class EurekaS1Pipeline(Detector1Pipeline):
             self.persistence.skip = meta.skip_persistence
             self.superbias.skip = meta.skip_superbias
             if meta.custom_bias:
+                log.writelog("\nUsing custom bias file")
                 self.superbias.override_superbias = meta.superbias_file
         elif instrument in ['MIRI']:
             self.firstframe.skip = meta.skip_firstframe

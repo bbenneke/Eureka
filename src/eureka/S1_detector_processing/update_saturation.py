@@ -50,7 +50,7 @@ def update_sat(input_model, log, meta):
 
     # Expand saturated pixels to full columns
     log.writelog('    Expand flags along columns.')
-    new_sat_mask = 1 * perc_sat_mask
+    new_sat_mask = 1 * median_sat_mask
     ngrp  = new_sat_mask.shape[0]
     ncols = new_sat_mask.shape[1]
     nrows = new_sat_mask.shape[2]
