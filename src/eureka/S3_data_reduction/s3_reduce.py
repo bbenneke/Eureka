@@ -309,7 +309,7 @@ def reduce(eventlabel, ecf_path=None, s2_meta=None):
                     data.flux.attrs['flux_units']
 
                 # correct G395H curvature
-                if meta.inst == 'nirspec' and data.mhdr['GRATING'] == 'G395H':
+                if meta.inst == 'nirspec' and (data.mhdr['GRATING'] == 'G395H' or data.mhdr['GRATING'] == 'G395M'):
                     if meta.curvature == 'correct':
                         log.writelog('  Correcting for G395H curvature...',
                                      mute=(not meta.verbose))
